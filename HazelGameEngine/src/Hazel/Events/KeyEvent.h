@@ -1,5 +1,5 @@
 #pragma once
-
+#include "hzpch.h"
 #include "Event.h"
 
 namespace Hazel {
@@ -62,8 +62,7 @@ namespace Hazel {
 	class HZ_API KeyTypedEvent : public KeyEvent
 	{
 	public:
-		KeyTypedEvent(int keycode)
-			: KeyEvent(keycode) {}
+		KeyTypedEvent(int keycode) : KeyEvent(keycode) {}
 
 		std::string ToString() const override
 		{

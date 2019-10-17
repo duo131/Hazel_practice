@@ -1,8 +1,5 @@
 #pragma once
-
-#include <string>
-#include <functional>
-
+#include "hzpch.h"
 #include "Hazel/Core.h"
 
 namespace Hazel {
@@ -59,6 +56,7 @@ namespace Hazel {
 
 	class EventDispatcher
 	{
+	
 	public:
 		EventDispatcher(Event& event): m_Event(event) {}
 
