@@ -27,37 +27,89 @@ namespace Hazel {
 		m_ImGuiLayer = new ImGuiLayer();
 		PushOverlay(m_ImGuiLayer);
 
-		//vertex array
-		glGenVertexArrays(1, &m_VertexArray);
-		glBindVertexArray(m_VertexArray);
+		m_VertexArray.reset(VertexArray::Create());
 
 		// OpenGl without transform so only in projection space [-1, 1] for x, y, z as NDR 
-		float vertices[3 * 3] = {
-			-0.5f, -0.5f, 0.0f,
-			0.5f, -0.5f, 0.0f,
-			0.0f, 0.5f, 0.0f
+		float vertices[3 * 7] = {
+			-0.5f, -0.5f,  0.0f,  /*color*/ 0.7f, 0.3f, 0.8f, 1.0f,
+			 0.5f, -0.5f,  0.0f,  /*color*/ 0.2f, 0.4f, 0.9f, 1.0f,
+			 0.0f,  0.5f,  0.0f,  /*color*/ 0.8f, 0.7f, 0.2f, 1.0f
 		};
 
-		//vertex bufferglBindVertexBuffer
-		glGenBuffers(1, &m_VertexBuffer);
-		glBindBuffer(GL_ARRAY_BUFFER, m_VertexBuffer);
 
-		//pass data to gpu
-		//GL_STATIC_DRAW do not need to update the data
-		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+		m_VertexBuffer.reset(VertexBuffer::Create(vertices, sizeof(vertices)));
+		//Define the layout
+		BufferLayout layout = {
+			{ShaderDataType::FLOAT3, "a_Position" },
+			{ShaderDataType::FLOAT4, "a_Color" },
+		};
 
-		glEnableVertexAttribArray(0);
-		// no normalize
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3*sizeof(float), nullptr);
-		
-		//index buffer
-		glGenBuffers(1, &m_IndexBuffer);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_IndexBuffer);
+		m_VertexBuffer->SetLayout(layout);
+		m_VertexArray->AddVertexBuffer(m_VertexBuffer);
 
-		unsigned int indices[3] = { 0, 1 ,2 };
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+		uint32_t indices[3] = { 0, 1 ,2 };
+		m_IndexBuffer.reset(IndexBuffer::Create(indices, 3));
+		m_VertexArray->SetIndexBuffer(m_IndexBuffer);
+
+
+		m_SquareVertexArray.reset(VertexArray::Create());
+		float squareVertices[3 * 4] = {
+			-0.75f, -0.75f,  0.0f,
+			 0.75f, -0.75f,  0.0f,
+			 0.75f,  0.75f,  0.0f,
+			-0.75f,  0.75f,  0.0f
+		};
+		std::shared_ptr<VertexBuffer> squareVertexBuffer;
+		squareVertexBuffer.reset(VertexBuffer::Create(squareVertices, sizeof(squareVertices)));
+
+
+		squareVertexBuffer->SetLayout({
+			{ShaderDataType::FLOAT3, "a_Position" }
+			});
+		m_SquareVertexArray->AddVertexBuffer(squareVertexBuffer);
+
+		uint32_t squareIndices[6] = { 0, 1 ,2, 2, 3, 0 };
+		std::shared_ptr<IndexBuffer> squareIndexBuffer;
+		squareIndexBuffer .reset(IndexBuffer::Create(squareIndices, 6));
+
+		m_SquareVertexArray->SetIndexBuffer(squareIndexBuffer);
+
 
 		std::string vertexSrc = R"(
+			#version 330 core
+
+			layout(location = 0) in vec3 a_Position;
+			layout(location = 1) in vec4 a_Color;	
+
+			out vec3 v_Position;
+			out vec4 v_Color;
+
+			void main()
+			{
+				v_Position = a_Position*0.5 + 0.5;
+				v_Color = a_Color;
+				gl_Position = vec4(a_Position - 0.2, 1.0);
+			}
+		)";
+
+		std::string fragmentSrc = R"(
+			#version 330 core
+
+			layout(location = 0) out vec4 a_Color;
+
+			in vec3 v_Position;
+			in vec4 v_Color;
+
+			void main()
+			{
+				a_Color = vec4(v_Position, 1.0);
+				a_Color = v_Color;
+			}
+		)";
+
+		m_Shader.reset(new Shader(vertexSrc, fragmentSrc));
+
+		std::string vertexSrc2 = R"(
 			#version 330 core
 
 			layout(location = 0) in vec3 a_Position;
@@ -71,7 +123,7 @@ namespace Hazel {
 			}
 		)";
 
-		std::string fragmentSrc = R"(
+		std::string fragmentSrc2 = R"(
 			#version 330 core
 
 			layout(location = 0) out vec4 a_Color;
@@ -84,8 +136,7 @@ namespace Hazel {
 			}
 		)";
 
-		m_Shader.reset(new Shader(vertexSrc, fragmentSrc));
-
+		m_Shader2.reset(new Shader(vertexSrc2, fragmentSrc2));
 	}
 
 
@@ -126,11 +177,15 @@ namespace Hazel {
 			glClearColor(0.2f, 0.2f, 0.2f, 1);
 			glClear(GL_COLOR_BUFFER_BIT);
 
+			//draw squre 
+			m_Shader2->Bind(); // for other API it has to bind first before
+			m_SquareVertexArray->Bind();
+			glDrawElements(GL_TRIANGLES, m_SquareVertexArray->GetIndexBuffer()->GetCount(), GL_UNSIGNED_INT, nullptr);
 
 			//bind data to render
 			m_Shader->Bind(); // for other API it has to bind first before
-			glBindVertexArray(m_VertexArray);
-			glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, nullptr);
+			m_VertexArray->Bind();
+			glDrawElements(GL_TRIANGLES, m_IndexBuffer->GetCount(), GL_UNSIGNED_INT, nullptr);
 
 			// render layer: from bottom layer to top layer
 			for (auto layer : m_LayerStack)
