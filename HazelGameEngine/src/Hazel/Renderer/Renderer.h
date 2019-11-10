@@ -1,18 +1,26 @@
 #pragma once
+#include "RenderCommand.h"
+#include "OrthographicCamera.h"
+#include "Shader.h"
 
 namespace Hazel {
-
-	enum class RendererAPI
-	{
-		NONE = 0, OPENGL = 1, DIRECTX = 2
-	};
 
 	class Renderer
 	{
 	public:
-		inline static RendererAPI GetRedererAPI() { return s_RendererAPI; }
+		static void BeginScene(OrthographicCamera& camera);
+		static void EndScene();
+
+		static void Submit(const std::shared_ptr<Shader>& shader,
+			               const std::shared_ptr<VertexArray>& vertexArray);
+		inline static RendererAPI::API GetRedererAPI() { return RendererAPI::GetAPI(); }
 	private:
-		static RendererAPI s_RendererAPI;
+		struct SceneData
+		{
+			glm::mat4 ViewProjectionMatrix;
+		};
+
+		static SceneData* m_SceneData;
 	};
 	
 }

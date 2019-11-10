@@ -3,10 +3,9 @@
 #include "Hazel/Events/ApplicationEvent.h"
 #include "Hazel/Log.h"
 
-
-#include <glad/glad.h>
-
 #include "Input.h"
+#include "Hazel/Renderer/Renderer.h"
+
 
 #include "glm/glm.hpp"
 
@@ -17,7 +16,7 @@ namespace Hazel {
 	//assign singleton(only one application a time) by this as pointer for other use
 	Application* Application::s_Instance = nullptr;
 
-	Application::Application()
+	Application::Application(): m_Camera(-1.6f, 1.6f, -0.9f, 0.9f)
 	{
 		HZ_CORE_ASSERT(!s_Instance, "Application already exist!");
 		s_Instance = this;
@@ -81,14 +80,16 @@ namespace Hazel {
 			layout(location = 0) in vec3 a_Position;
 			layout(location = 1) in vec4 a_Color;	
 
+			uniform mat4 u_ViewProjection;
+
 			out vec3 v_Position;
 			out vec4 v_Color;
 
 			void main()
 			{
-				v_Position = a_Position*0.5 + 0.5;
+				v_Position = a_Position;
 				v_Color = a_Color;
-				gl_Position = vec4(a_Position - 0.2, 1.0);
+				gl_Position = u_ViewProjection * vec4(a_Position , 1.0);
 			}
 		)";
 
@@ -114,12 +115,14 @@ namespace Hazel {
 
 			layout(location = 0) in vec3 a_Position;
 
+            uniform mat4 u_ViewProjection;
+
 			out vec3 v_Position;
 
 			void main()
 			{
-				v_Position = a_Position*0.5 + 0.5;
-				gl_Position = vec4(a_Position - 0.2, 1.0);
+				v_Position = a_Position;
+				gl_Position = u_ViewProjection * vec4(a_Position, 1.0);
 			}
 		)";
 
@@ -132,7 +135,7 @@ namespace Hazel {
 
 			void main()
 			{
-				a_Color = vec4(v_Position, 1.0);
+				a_Color = vec4(0.2, 0.3, 0.8, 1.0);
 			}
 		)";
 
@@ -174,18 +177,23 @@ namespace Hazel {
 
 		while (m_Running)
 		{
-			glClearColor(0.2f, 0.2f, 0.2f, 1);
-			glClear(GL_COLOR_BUFFER_BIT);
 
-			//draw squre 
-			m_Shader2->Bind(); // for other API it has to bind first before
-			m_SquareVertexArray->Bind();
-			glDrawElements(GL_TRIANGLES, m_SquareVertexArray->GetIndexBuffer()->GetCount(), GL_UNSIGNED_INT, nullptr);
+			RenderCommand::SetColorClear(glm::vec4(0.2f, 0.2f, 0.2f, 1));
+			RenderCommand::Clear();
+			m_Camera.SetPosition({ 0.5f, 0.5f, 0.0f });
+			m_Camera.SetRotation(45.0f);
+			Renderer::BeginScene(m_Camera);
 
 			//bind data to render
-			m_Shader->Bind(); // for other API it has to bind first before
-			m_VertexArray->Bind();
-			glDrawElements(GL_TRIANGLES, m_IndexBuffer->GetCount(), GL_UNSIGNED_INT, nullptr);
+			//draw squre 
+			Renderer::Submit(m_Shader2, m_SquareVertexArray);
+			//draw triangle 
+			Renderer::Submit(m_Shader, m_VertexArray);
+
+			Renderer::EndScene();
+
+
+			//Renderer::Flush();
 
 			// render layer: from bottom layer to top layer
 			for (auto layer : m_LayerStack)
