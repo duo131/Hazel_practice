@@ -5,7 +5,10 @@
 #include "Windows.h"
 #include "LayerStack.h"
 
+#include "Hazel/Core/Timestep.h"
+
 #include "Hazel/ImGui/ImGuiLayer.h"
+
 #include "Hazel/Renderer/Shader.h"
 #include "Hazel/Renderer/Buffer.h"
 #include "Hazel/Renderer/VertexArray.h"
@@ -31,24 +34,17 @@ namespace Hazel {
 	private:
 		bool OnWindowClose(WindowCloseEvent& e);
 
+	private:
 		std::unique_ptr<Window> m_Window;
 		ImGuiLayer* m_ImGuiLayer;
 		bool m_Running = true;
 
 		LayerStack m_LayerStack;
-
-		std::shared_ptr<Shader> m_Shader;
-		std::shared_ptr<VertexArray> m_VertexArray;
-		std::shared_ptr<VertexBuffer> m_VertexBuffer;
-		std::shared_ptr<IndexBuffer> m_IndexBuffer;
-		
-		std::shared_ptr<Shader> m_Shader2;
-		std::shared_ptr<VertexArray> m_SquareVertexArray;
-
-		OrthographicCamera m_Camera;
-
+		Timestep m_Timestep;
+		float m_LastFrameTime = 0.0f;
 	private:
 		static Application* s_Instance;
+
 	};
 
 	// To be defined in client
