@@ -15,6 +15,7 @@ namespace Hazel {
 			NONE = 0, OPENGL = 1, DIRECTX = 2
 		};
 	public:
+		virtual void Init() = 0;
 		virtual void SetColorClear(const glm::vec4& color) = 0;
 		virtual void Clear() = 0;
 

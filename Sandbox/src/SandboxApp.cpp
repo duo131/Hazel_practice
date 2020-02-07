@@ -43,18 +43,19 @@ public:
 
 
 		m_SquareVertexArray.reset(Hazel::VertexArray::Create());
-		float squareVertices[3 * 4] = {
-			-0.5f, -0.5f,  0.0f,
-			 0.5f, -0.5f,  0.0f,
-			 0.5f,  0.5f,  0.0f,
-			-0.5f,  0.5f,  0.0f
+		float squareVertices[5 * 4] = {
+			-0.5f, -0.5f,  0.0f,  0.0f,  0.0f,
+			 0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+			 0.5f,  0.5f,  0.0f,  1.0f,  1.0f,
+			-0.5f,  0.5f,  0.0f,  0.0f,  1.0f
 		};
 		Hazel::Ref<Hazel::VertexBuffer> squareVertexBuffer;
 		squareVertexBuffer.reset(Hazel::VertexBuffer::Create(squareVertices, sizeof(squareVertices)));
 
 
 		squareVertexBuffer->SetLayout({
-			{Hazel::ShaderDataType::FLOAT3, "a_Position" }
+			{Hazel::ShaderDataType::FLOAT3, "a_Position" },
+			{Hazel::ShaderDataType::FLOAT2, "a_TexCoord" }
 			});
 		m_SquareVertexArray->AddVertexBuffer(squareVertexBuffer);
 
@@ -100,8 +101,9 @@ public:
 			}
 		)";
 
-		m_Shader.reset(Hazel::Shader::Create(vertexSrc, fragmentSrc));
+		m_Shader = Hazel::Shader::Create("VertexPosColor", vertexSrc, fragmentSrc);
 
+		//flatColorShader
 		std::string vertexSrc2 = R"(
 			#version 330 core
 
@@ -133,7 +135,17 @@ public:
 			}
 		)";
 
-		m_Shader2.reset(Hazel::Shader::Create(vertexSrc2, fragmentSrc2));
+		m_Shader2 = Hazel::Shader::Create("FlatColor", vertexSrc2, fragmentSrc2);
+	
+
+		auto textureShader = m_ShaderLibrary.Load("assets/shaders/Texture.glsl");
+		
+		m_Texture = Hazel::Texture2D::Create("assets/textures/Checkerboard.png");
+		m_ChernoLogoTexture = Hazel::Texture2D::Create("assets/textures/ChernoLogo.png");
+
+		std::dynamic_pointer_cast<Hazel::OpenGLShader> (textureShader)->Bind();
+		std::dynamic_pointer_cast<Hazel::OpenGLShader> (textureShader)->UploadUniformInt("u_Texture", 0);
+
 	}
 
 	void OnUpdate(Hazel::Timestep timestep) override
@@ -173,7 +185,12 @@ public:
 		Hazel::RenderCommand::Clear();
 		m_Camera.SetPosition(m_CameraPosition);
 		m_Camera.SetRotation(m_CameraRotation);
+
+
 		Hazel::Renderer::BeginScene(m_Camera);
+		//Hazel::Renderer::BeginScene(m_Scene);
+		//Hazel::Renderer2D::BeginScene(m_Camera);
+		//Hazel::Renderer2D::DrawQuad();
 
 		//bind data to render
 		//glm::mat4 transform = glm::translate(glm::mat4(1.0f), m_SquarePosition);
@@ -200,8 +217,17 @@ public:
 			}
 			
 		}
+		// texture square
+
+		auto textureShader = m_ShaderLibrary.Get("Texture");
+
+		m_Texture->Bind();
+		Hazel::Renderer::Submit(textureShader, m_SquareVertexArray, glm::scale(glm::mat4(1.0f), glm::vec3(1.5f)));
+		
+		m_ChernoLogoTexture->Bind();
+		Hazel::Renderer::Submit(textureShader, m_SquareVertexArray, glm::scale(glm::mat4(1.0f), glm::vec3(1.5f)));
 		//draw triangle 
-		Hazel::Renderer::Submit(m_Shader, m_VertexArray);
+		//Hazel::Renderer::Submit(m_Shader, m_VertexArray);
 
 		Hazel::Renderer::EndScene();
 
@@ -239,12 +265,15 @@ public:
 		return false;
 	}
 private:
+	Hazel::ShaderLibrary m_ShaderLibrary;
 
 	Hazel::Ref <Hazel::Shader> m_Shader;
 	Hazel::Ref<Hazel::VertexArray> m_VertexArray;
 
 	Hazel::Ref<Hazel::Shader> m_Shader2;
 	Hazel::Ref<Hazel::VertexArray> m_SquareVertexArray;
+
+	Hazel::Ref<Hazel::Texture2D> m_Texture, m_ChernoLogoTexture;
 
 	Hazel::OrthographicCamera m_Camera;
 	glm::vec3 m_CameraPosition;

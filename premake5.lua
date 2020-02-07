@@ -16,6 +16,7 @@ IncludeDir["GLFW"] = "HazelGameEngine/3rdParty/GLFW/include"
 IncludeDir["Glad"] = "HazelGameEngine/3rdParty/Glad/include"
 IncludeDir["ImGui"] = "HazelGameEngine/3rdParty/imgui"
 IncludeDir["glm"] = "HazelGameEngine/3rdParty/glm"
+IncludeDir["stb_image"] = "HazelGameEngine/3rdParty/stb_image"
 
 -- Include to the premake5.lua file (c++ style)
 include "HazelGameEngine/3rdParty/GLFW"
@@ -39,6 +40,8 @@ project "HazelGameEngine"
 	{
 		"%{prj.name}/src/**.h",
 		"%{prj.name}/src/**.cpp",
+		"%{prj.name}/3rdParty/stb_image/**.h",
+		"%{prj.name}/3rdParty/stb_image/**.cpp",
 		"%{prj.name}/3rdParty/glm/glm/**.hpp",
 		"%{prj.name}/3rdParty/glm/glm/**.inl"
 	}
@@ -55,7 +58,8 @@ project "HazelGameEngine"
 		"%{IncludeDir.GLFW}",
 		"%{IncludeDir.Glad}",
 		"%{IncludeDir.ImGui}",
-		"%{IncludeDir.glm}"
+		"%{IncludeDir.glm}",
+		"%{IncludeDir.stb_image}"
 	}
 
 	links
