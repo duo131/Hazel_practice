@@ -1,7 +1,7 @@
 #include "hzpch.h"
 #include "Application.h"
 #include "Hazel/Events/ApplicationEvent.h"
-#include "Hazel/Log.h"
+#include "Hazel/Core/Log.h"
 
 #include "Input.h"
 #include "Hazel/Renderer/Renderer.h"
@@ -53,6 +53,7 @@ namespace Hazel {
 	{
 		EventDispatcher dispatcher(e);
 		dispatcher.Dispatch<WindowCloseEvent>(BIND_EVENT_FN(Application::OnWindowClose));
+		dispatcher.Dispatch<WindowResizeEvent>(BIND_EVENT_FN(Application::OnWindowResize));
 		//HZ_CORE_TRACE("{0}",e);
 
 		//Event layer: from top layer to bottom layer(backward)
@@ -72,12 +73,17 @@ namespace Hazel {
 			float time = (float)glfwGetTime(); // should be platform getTime
 			Timestep timestep = time - m_LastFrameTime;
 			m_LastFrameTime = time;
-			// render layer: from bottom layer to top layer
-			for (auto layer : m_LayerStack)
-			{
-				layer->OnUpdate(timestep);
-			}
 
+
+			if (!m_Minimized) // if minimized, no need to update
+			{
+				// render layer: from bottom layer to top layer
+				for (auto layer : m_LayerStack)
+				{
+					layer->OnUpdate(timestep);
+				}
+		
+			}
 			// for ImGui Layer
 			m_ImGuiLayer->Begin();
 			for (auto layer : m_LayerStack)
@@ -85,7 +91,6 @@ namespace Hazel {
 				layer->OnImGuiRender();
 			}
 			m_ImGuiLayer->End();
-
 			//auto [x, y] = Input::GetMousePostion();
 			//HZ_CORE_TRACE("{0}, {1}", x, y);
 			m_Window->OnUpdate();
@@ -96,5 +101,17 @@ namespace Hazel {
 	{
 		m_Running = false;
 		return true;
+	}
+	bool Application::OnWindowResize(WindowResizeEvent& e)
+	{
+		//when windows minimize, the height and width will be 0
+		if (e.GetWidth() == 0 || e.GetHeight() == 0)
+		{
+			m_Minimized = true;
+			return false;
+		}
+		m_Minimized = false;
+		Renderer::WindowResize(e.GetWidth(), e.GetHeight());
+		return false;
 	}
 }

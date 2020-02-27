@@ -2,7 +2,7 @@
 // same as window.h, this is an interface for input and will be inheritated to other platforms
 // but input has to be static
 
-#include "Hazel/Core.h"
+#include "Hazel/Core/Core.h"
 
 namespace Hazel{
 

@@ -1,4 +1,5 @@
 #include <Hazel.h>
+#include "Hazel/Core/EntryPoint.h" //put entry point to the program where extually use
 
 #include "Platform/OpenGL/OpenGLShader.h"
 
@@ -7,14 +8,15 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "Sandbox2D.h"
 
 class ExamplePlayer : public  Hazel::Layer
 {
 public:
-	ExamplePlayer() : Layer("Example"), m_Camera(-1.6f, 1.6f, -0.9f, 0.9f) , m_CameraPosition(0.0f, 0.0f, 0.0f), m_SquarePosition(0.0f)
+	ExamplePlayer() : Layer("Example"), m_CameraController(2780.0f/1620.0f)
 	{
 
-		m_VertexArray.reset(Hazel::VertexArray::Create());
+		m_VertexArray = Hazel::VertexArray::Create();
 
 		// OpenGl without transform so only in projection space [-1, 1] for x, y, z as NDR 
 		float vertices[3 * 7] = {
@@ -42,7 +44,7 @@ public:
 		m_VertexArray->SetIndexBuffer(indexBuffer);
 
 
-		m_SquareVertexArray.reset(Hazel::VertexArray::Create());
+		m_SquareVertexArray = Hazel::VertexArray::Create();
 		float squareVertices[5 * 4] = {
 			-0.5f, -0.5f,  0.0f,  0.0f,  0.0f,
 			 0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
@@ -150,21 +152,8 @@ public:
 
 	void OnUpdate(Hazel::Timestep timestep) override
 	{
-	
-		if (Hazel::Input::IsKeyPressed(HZ_KEY_LEFT))
-			m_CameraPosition.x -= m_CameraMoveSpeed * timestep;
-		else if (Hazel::Input::IsKeyPressed(HZ_KEY_RIGHT))
-			m_CameraPosition.x += m_CameraMoveSpeed * timestep;
-		if (Hazel::Input::IsKeyPressed(HZ_KEY_UP))
-			m_CameraPosition.y += m_CameraMoveSpeed * timestep;
-		else if (Hazel::Input::IsKeyPressed(HZ_KEY_DOWN))
-			m_CameraPosition.y -= m_CameraMoveSpeed * timestep;
-
-		if (Hazel::Input::IsKeyPressed(HZ_KEY_A))
-			m_CameraRotation += m_CameraRotationSpeed * timestep;
-		else if (Hazel::Input::IsKeyPressed(HZ_KEY_D))
-			m_CameraRotation -= m_CameraRotationSpeed * timestep;
-
+	    // Update
+		m_CameraController.OnUpdate(timestep);
 		//
 		if (Hazel::Input::IsKeyPressed(HZ_KEY_J))
 			m_SquarePosition.x -= m_SquareMoveSpeed * timestep;
@@ -174,20 +163,14 @@ public:
 			m_SquarePosition.y += m_SquareMoveSpeed * timestep;
 		else if (Hazel::Input::IsKeyPressed(HZ_KEY_K))
 			m_SquarePosition.y -= m_SquareMoveSpeed * timestep;
-		//
-		if (Hazel::Input::IsKeyPressed(HZ_KEY_LEFT_CONTROL))
-		{
-			m_CameraPosition = { 0.0f,0.0f,0.0f };
-			m_SquarePosition = { 0.0f,0.0f,0.0f };
-			m_CameraRotation = 0.0f;
-		}
+		// Render
 		Hazel::RenderCommand::SetColorClear(glm::vec4(0.2f, 0.2f, 0.2f, 1));
 		Hazel::RenderCommand::Clear();
-		m_Camera.SetPosition(m_CameraPosition);
-		m_Camera.SetRotation(m_CameraRotation);
+		//m_Camera.SetPosition(m_CameraPosition);
+		//m_Camera.SetRotation(m_CameraRotation);
 
 
-		Hazel::Renderer::BeginScene(m_Camera);
+		Hazel::Renderer::BeginScene(m_CameraController.GetCamera());
 		//Hazel::Renderer::BeginScene(m_Scene);
 		//Hazel::Renderer2D::BeginScene(m_Camera);
 		//Hazel::Renderer2D::DrawQuad();
@@ -246,10 +229,12 @@ public:
 
 	void OnEvent(Hazel::Event& event) override
 	{
+		m_CameraController.OnEvent(event);
 		//Hazel::EventDispatcher dispatcher(event);
 		//dispatcher.Dispatch<Hazel::KeyPressedEvent>(HZ_BIND_EVENT_FN(ExamplePlayer::OnKeyPressedEvent));
 	}
 
+	/*
 	// using this is like a key event, the camera wont move smooth
 	bool OnKeyPressedEvent(Hazel::KeyPressedEvent& event)
 	{
@@ -264,6 +249,7 @@ public:
 
 		return false;
 	}
+	*/
 private:
 	Hazel::ShaderLibrary m_ShaderLibrary;
 
@@ -275,11 +261,7 @@ private:
 
 	Hazel::Ref<Hazel::Texture2D> m_Texture, m_ChernoLogoTexture;
 
-	Hazel::OrthographicCamera m_Camera;
-	glm::vec3 m_CameraPosition;
-	float m_CameraMoveSpeed = 3.0f;
-	float m_CameraRotation = 0.0f;
-	float m_CameraRotationSpeed = 100.0f;
+	Hazel::OrthographicCameraController m_CameraController;
 
 	glm::vec3 m_SquarePosition;
 	float m_SquareMoveSpeed = 1.0f;
@@ -292,8 +274,9 @@ class Sandbox : public Hazel::Application
 public:
 	Sandbox()
 	{
-		PushLayer(new ExamplePlayer());
+		//PushLayer(new ExamplePlayer());
 		//PushOverlay(new Hazel::ImGuiLayer());
+		PushLayer(new Sandbox2D());
 	}
 	~Sandbox()
 	{}

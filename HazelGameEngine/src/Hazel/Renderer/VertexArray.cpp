@@ -6,7 +6,7 @@
 
 namespace Hazel {
 
-	VertexArray* VertexArray::Create()
+	Ref<VertexArray> VertexArray::Create()
 	{
 		switch (Renderer::GetRedererAPI())
 		{
@@ -14,7 +14,7 @@ namespace Hazel {
 			HZ_CORE_ASSERT(false, "RendererAPI not support");
 			return nullptr;
 		case RendererAPI::API::OPENGL:
-			return new OpenGLVertexArray();
+			return std::make_shared<OpenGLVertexArray>();
 		default:
 			break;
 		}
